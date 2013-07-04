@@ -30,6 +30,7 @@ module AI.SimpleEA (
 
 import Control.Monad.Random
 import System.Random.Mersenne.Pure64
+import Control.Parallel.Strategies
 
 -- | An individual's fitness is simply a number.
 type Fitness = Double
@@ -98,7 +99,8 @@ generations !pop selFun fitFun recOp mutOp = do
     -- mutate genomes using the mutation operator
     newGen <- mapM mutOp newGen
 
-    let fitnessVals = map (`fitFun` newGen) newGen
+    let pFitnessVals = map (`fitFun` newGen) newGen
+    let fitnessVals = pFitnessVals `using` parListChunk 100 rdeepseq
     nextGens <- generations (zip newGen fitnessVals) selFun fitFun recOp mutOp
 
     return $ pop : nextGens
